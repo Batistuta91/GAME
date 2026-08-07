@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>המשחק של התינוקת</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    background-size: 400% 400%;
+    animation: bgShift 14s ease infinite;
+  }
+  .screen.active { display: block; }
+  @keyframes bgShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ---------- MENU ---------- */
+  #menu {
+    background: linear-gradient(135deg, #A0E7E5, #B4F8C8, #FBE7C6);
+  }
+  #menuGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 1fr;
+    gap: 14px;
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+  }
+  .menu-btn {
+    border: none;
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 60px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transition: transform 0.08s ease;
+  }
+  .menu-btn.wide { grid-column: span 2; }
+  .menu-btn:active { transform: scale(0.94); }
+  .menu-btn span.label {
+    font-size: 22px;
+    font-weight: bold;
+    color: rgba(0,0,0,0.6);
+  }
+  #menuAnimals { background: #FFD93D; }
+  #menuTools { background: #6BCB77; }
+  #menuNotes { background: #FF9DE3; }
+  #menuColors { background: #FF9F80; }
+  #menuNumbers { background: #8ECAE6; }
+  #menuFarts { background: #C7F0BD; }
+  #menuBubbles { background: #B8E8FC; }
+  #menuShapes { background: #FFE29A; }
+  #menuBalloons { background: #FFC2E2; }
+  #menuBells { background: #FFD97D; }
+
+  /* ---------- STAGE BACK BUTTON ---------- */
+  .back-btn {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    border: none;
+    font-size: 22px;
+    z-index: 30;
+  }
+
+  /* ---------- GRIDS (shared) ---------- */
+  .item-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 1fr;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+  }
+  .item-btn {
+    border: none;
+    border-radius: 28px;
+    font-size: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    transition: transform 0.08s ease;
+  }
+  .item-btn:active { transform: scale(0.9); }
+  .item-btn.playing { animation: wiggle 0.5s ease; }
+  .item-btn.wide { grid-column: span 2; }
+  @keyframes wiggle {
+    0% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.25) rotate(-10deg); }
+    50% { transform: scale(1.15) rotate(8deg); }
+    75% { transform: scale(1.2) rotate(-6deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  /* Animals screen colors */
+  #animalsScreen { background: linear-gradient(135deg, #FFE29F, #FFA99F, #FF719A); }
+  #dog { background: #FFD93D; }
+  #cat { background: #6BCB77; }
+  #cow { background: #FFB6C1; }
+  #sheep { background: #A8D8FF; }
+  #duck { background: #B4F0C7; }
+  #pig { background: #FFC9E3; }
+  #rooster { background: #FFA5D2; }
+
+  /* Tools screen colors */
+  #toolsScreen { background: linear-gradient(135deg, #D0F4DE, #A9DEF9, #FCF6BD); }
+  #hammer { background: #FFB4A2; }
+  #wrench { background: #A9DEF9; }
+  #screwdriver { background: #FCF6BD; }
+  #saw { background: #E4C1F9; }
+  #paintbrush { background: #B9FBC0; }
+  #drill { background: #F1C0E8; }
+
+  /* Notes screen colors */
+  #notesScreen { background: linear-gradient(135deg, #FBC4AB, #F8AD9D, #FFD6A5); }
+  #note1 { background: #FFADAD; }
+  #note2 { background: #FFD6A5; }
+  #note3 { background: #FDFFB6; }
+  #note4 { background: #CAFFBF; }
+  #note5 { background: #9BF6FF; }
+  #note6 { background: #BDB2FF; }
+
+  /* Colors screen */
+  #colorsScreen { background: linear-gradient(135deg, #E0F7FA, #FFF9C4, #FFE0F0); }
+  .item-btn.plain { font-size: 0; }
+  #col1 { background: #FF6B6B; }
+  #col2 { background: #4D96FF; }
+  #col3 { background: #FFD93D; }
+  #col4 { background: #6BCB77; }
+  #col5 { background: #A66DD4; }
+  #col6 { background: #FF9DE3; }
+
+  /* Numbers screen */
+  #numbersScreen { background: linear-gradient(135deg, #C1FBA4, #A8DADC, #FFE8A3); }
+  #num1 { background: #FFADAD; }
+  #num2 { background: #FFD6A5; }
+  #num3 { background: #FDFFB6; }
+  #num4 { background: #CAFFBF; }
+  #num5 { background: #9BF6FF; }
+  #num6 { background: #BDB2FF; }
+  .item-btn.number-btn {
+    font-size: 56px;
+    font-weight: bold;
+    color: rgba(0,0,0,0.55);
+    flex-direction: column;
+  }
+  .item-btn.number-btn .num-emoji { font-size: 60px; }
+
+  /* Farts screen */
+  #fartsScreen { background: linear-gradient(135deg, #D4F1BE, #FFF3B0, #FFD6BA); }
+  #fart1 { background: #FFCAD4; }
+  #fart2 { background: #C9F2C7; }
+  #fart3 { background: #FFE5A0; }
+  #fart4 { background: #BDE0FE; }
+  #fart5 { background: #E4C1F9; }
+  #fart6 { background: #FFB4A2; }
+
+  /* Bubbles screen */
+  #bubblesScreen { background: linear-gradient(135deg, #CDEFFF, #E0F7FA, #F0FFFA); }
+  .item-btn.plain.bubble { font-size: 0; border-radius: 50%; }
+  #bub1 { background: radial-gradient(circle at 35% 30%, #ffffff, #A0D8F1 70%); }
+  #bub2 { background: radial-gradient(circle at 35% 30%, #ffffff, #B9F3D6 70%); }
+  #bub3 { background: radial-gradient(circle at 35% 30%, #ffffff, #FBE3A0 70%); }
+  #bub4 { background: radial-gradient(circle at 35% 30%, #ffffff, #F6B8D8 70%); }
+  #bub5 { background: radial-gradient(circle at 35% 30%, #ffffff, #CBB9F6 70%); }
+  #bub6 { background: radial-gradient(circle at 35% 30%, #ffffff, #A9E5C9 70%); }
+
+  /* Shapes screen */
+  #shapesScreen { background: linear-gradient(135deg, #FFF3D6, #FFE0EC, #E0F0FF); }
+  #shp1 { background: #FF6B6B; }
+  #shp2 { background: #4D96FF; }
+  #shp3 { background: #FFD93D; }
+  #shp4 { background: #6BCB77; }
+  #shp5 { background: #A66DD4; }
+  #shp6 { background: #FF9DE3; }
+
+  /* Balloons screen */
+  #balloonsScreen { background: linear-gradient(135deg, #FFF0F5, #E0F7FF, #FFF9E0); }
+  #bal1 { background: #FF6B6B; }
+  #bal2 { background: #4D96FF; }
+  #bal3 { background: #FFD93D; }
+  #bal4 { background: #6BCB77; }
+  #bal5 { background: #A66DD4; }
+  #bal6 { background: #FF9DE3; }
+
+  /* Bells screen */
+  #bellsScreen { background: linear-gradient(135deg, #FFF6E0, #FFE8CC, #FFD9B3); }
+  #bell1 { background: #FFB347; }
+  #bell2 { background: #FFCC70; }
+  #bell3 { background: #FFE08A; }
+  #bell4 { background: #F4A261; }
+  #bell5 { background: #E9C46A; }
+  #bell6 { background: #F0C987; }
+
+  .burst {
+    position: fixed;
+    pointer-events: none;
+    font-size: 50px;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 20;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0.5); opacity: 1; }
+    100% { transform: translateY(-100px) scale(1.4); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MAIN MENU -->
+<div class="screen active" id="menu">
+  <div id="menuGrid">
+    <button class="menu-btn" id="menuAnimals">🐶<span class="label">חיות</span></button>
+    <button class="menu-btn" id="menuTools">🔧<span class="label">כלי עבודה</span></button>
+    <button class="menu-btn" id="menuNotes">🎵<span class="label">תווי נגינה</span></button>
+    <button class="menu-btn" id="menuColors">🎨<span class="label">צבעים</span></button>
+    <button class="menu-btn" id="menuNumbers">🔢<span class="label">מספרים</span></button>
+    <button class="menu-btn" id="menuFarts">💨<span class="label">פלוצים</span></button>
+    <button class="menu-btn" id="menuBubbles">🫧<span class="label">בועות</span></button>
+    <button class="menu-btn" id="menuShapes">⭐<span class="label">צורות</span></button>
+    <button class="menu-btn" id="menuBalloons">🎈<span class="label">בלונים</span></button>
+    <button class="menu-btn" id="menuBells">🔔<span class="label">פעמונים</span></button>
+  </div>
+</div>
+
+<!-- ANIMALS STAGE -->
+<div class="screen" id="animalsScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="dog" data-sound="dog">🐶</button>
+    <button class="item-btn" id="cat" data-sound="cat">🐱</button>
+    <button class="item-btn" id="cow" data-sound="cow">🐮</button>
+    <button class="item-btn" id="sheep" data-sound="sheep">🐑</button>
+    <button class="item-btn" id="duck" data-sound="duck">🦆</button>
+    <button class="item-btn" id="pig" data-sound="pig">🐷</button>
+    <button class="item-btn wide" id="rooster" data-sound="rooster">🐓</button>
+  </div>
+</div>
+
+<!-- TOOLS STAGE -->
+<div class="screen" id="toolsScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="hammer" data-tool="hammer">🔨</button>
+    <button class="item-btn" id="wrench" data-tool="wrench">🔧</button>
+    <button class="item-btn" id="screwdriver" data-tool="screwdriver">🪛</button>
+    <button class="item-btn" id="saw" data-tool="saw">🪚</button>
+    <button class="item-btn" id="paintbrush" data-tool="paint">🖌️</button>
+    <button class="item-btn" id="drill" data-tool="drill">🔩</button>
+  </div>
+</div>
+
+<!-- NOTES STAGE -->
+<div class="screen" id="notesScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="note1" data-note="0">🎹</button>
+    <button class="item-btn" id="note2" data-note="1">🎸</button>
+    <button class="item-btn" id="note3" data-note="2">🥁</button>
+    <button class="item-btn" id="note4" data-note="3">🎺</button>
+    <button class="item-btn" id="note5" data-note="4">🎷</button>
+    <button class="item-btn" id="note6" data-note="5">🪕</button>
+  </div>
+</div>
+
+<!-- COLORS STAGE -->
+<div class="screen" id="colorsScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn plain" id="col1" data-color="0"></button>
+    <button class="item-btn plain" id="col2" data-color="1"></button>
+    <button class="item-btn plain" id="col3" data-color="2"></button>
+    <button class="item-btn plain" id="col4" data-color="3"></button>
+    <button class="item-btn plain" id="col5" data-color="4"></button>
+    <button class="item-btn plain" id="col6" data-color="5"></button>
+  </div>
+</div>
+
+<!-- NUMBERS STAGE -->
+<div class="screen" id="numbersScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn number-btn" id="num1" data-num="1">1</button>
+    <button class="item-btn number-btn" id="num2" data-num="2">2</button>
+    <button class="item-btn number-btn" id="num3" data-num="3">3</button>
+    <button class="item-btn number-btn" id="num4" data-num="4">4</button>
+    <button class="item-btn number-btn" id="num5" data-num="5">5</button>
+    <button class="item-btn number-btn wide" id="num6" data-num="6">6</button>
+  </div>
+</div>
+
+<!-- FARTS STAGE -->
+<div class="screen" id="fartsScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="fart1" data-fart="0">💨</button>
+    <button class="item-btn" id="fart2" data-fart="1">💨</button>
+    <button class="item-btn" id="fart3" data-fart="2">💨</button>
+    <button class="item-btn" id="fart4" data-fart="3">💨</button>
+    <button class="item-btn" id="fart5" data-fart="4">💨</button>
+    <button class="item-btn" id="fart6" data-fart="5">💨</button>
+  </div>
+</div>
+
+<!-- BUBBLES STAGE -->
+<div class="screen" id="bubblesScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn plain bubble" id="bub1" data-bubble="0"></button>
+    <button class="item-btn plain bubble" id="bub2" data-bubble="1"></button>
+    <button class="item-btn plain bubble" id="bub3" data-bubble="2"></button>
+    <button class="item-btn plain bubble" id="bub4" data-bubble="3"></button>
+    <button class="item-btn plain bubble" id="bub5" data-bubble="4"></button>
+    <button class="item-btn plain bubble" id="bub6" data-bubble="5"></button>
+  </div>
+</div>
+
+<!-- SHAPES STAGE -->
+<div class="screen" id="shapesScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="shp1" data-shape="0">⭐</button>
+    <button class="item-btn" id="shp2" data-shape="1">🔵</button>
+    <button class="item-btn" id="shp3" data-shape="2">🔺</button>
+    <button class="item-btn" id="shp4" data-shape="3">⬛</button>
+    <button class="item-btn" id="shp5" data-shape="4">❤️</button>
+    <button class="item-btn" id="shp6" data-shape="5">🔶</button>
+  </div>
+</div>
+
+<!-- BALLOONS STAGE -->
+<div class="screen" id="balloonsScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="bal1" data-balloon="0">🎈</button>
+    <button class="item-btn" id="bal2" data-balloon="1">🎈</button>
+    <button class="item-btn" id="bal3" data-balloon="2">🎈</button>
+    <button class="item-btn" id="bal4" data-balloon="3">🎈</button>
+    <button class="item-btn" id="bal5" data-balloon="4">🎈</button>
+    <button class="item-btn" id="bal6" data-balloon="5">🎈</button>
+  </div>
+</div>
+
+<!-- BELLS STAGE -->
+<div class="screen" id="bellsScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div class="item-grid">
+    <button class="item-btn" id="bell1" data-bell="0">🔔</button>
+    <button class="item-btn" id="bell2" data-bell="1">🔔</button>
+    <button class="item-btn" id="bell3" data-bell="2">🔔</button>
+    <button class="item-btn" id="bell4" data-bell="3">🔔</button>
+    <button class="item-btn" id="bell5" data-bell="4">🔔</button>
+    <button class="item-btn" id="bell6" data-bell="5">🔔</button>
+  </div>
+</div>
+
+<script>
+/* ---------------- Navigation ---------------- */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+document.getElementById('menuAnimals').addEventListener('click', () => showScreen('animalsScreen'));
+document.getElementById('menuTools').addEventListener('click', () => showScreen('toolsScreen'));
+document.getElementById('menuNotes').addEventListener('click', () => showScreen('notesScreen'));
+document.getElementById('menuColors').addEventListener('click', () => showScreen('colorsScreen'));
+document.getElementById('menuNumbers').addEventListener('click', () => showScreen('numbersScreen'));
+document.getElementById('menuFarts').addEventListener('click', () => showScreen('fartsScreen'));
+document.getElementById('menuBubbles').addEventListener('click', () => showScreen('bubblesScreen'));
+document.getElementById('menuShapes').addEventListener('click', () => showScreen('shapesScreen'));
+document.getElementById('menuBalloons').addEventListener('click', () => showScreen('balloonsScreen'));
+document.getElementById('menuBells').addEventListener('click', () => showScreen('bellsScreen'));
+document.querySelectorAll('[data-back]').forEach(btn => {
+  btn.addEventListener('click', () => showScreen('menu'));
+});
+
+/* ---------------- Shared burst effect ---------------- */
+const hearts = ['💛','✨','⭐','💚','💗'];
+function burstAt(btn, emoji) {
+  const rect = btn.getBoundingClientRect();
+  const burst = document.createElement('div');
+  burst.className = 'burst';
+  burst.textContent = emoji || hearts[Math.floor(Math.random() * hearts.length)];
+  burst.style.left = (rect.left + rect.width / 2 - 25) + 'px';
+  burst.style.top = (rect.top + rect.height / 2 - 25) + 'px';
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 1000);
+}
+function wiggle(btn) {
+  btn.classList.remove('playing');
+  void btn.offsetWidth;
+  btn.classList.add('playing');
+}
+
+/* ---------------- ANIMALS: real recordings ---------------- */
+const animalSounds = {
+  dog: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Barking_of_a_dog.ogg'),
+  cat: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Meow.ogg'),
+  sheep: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Sheep_bleat.ogg'),
+  rooster: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Rooster_crowing.ogg'),
+  cow: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Mudchute_cow_1.ogg'),
+  duck: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Mudchute_duck_2.ogg'),
+  pig: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Mudchute_pig_1.ogg')
+};
+document.querySelectorAll('#animalsScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const audio = animalSounds[btn.dataset.sound];
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    wiggle(btn);
+    burstAt(btn);
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- Web Audio setup (tools + notes) ---------------- */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* ---------------- TOOLS: pleasant sine-tone sounds, same gentle feel as the notes ---------------- */
+function playGentleTone(freq, duration, when) {
+  const ctx = getAudioCtx();
+  const now = when;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.3, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now); osc.stop(now + duration);
+}
+
+function playToolSound(type) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+
+  if (type === 'hammer') {
+    // two cheerful knocks
+    playGentleTone(392.00, 0.25, now);        // G
+    playGentleTone(523.25, 0.3, now + 0.15);  // C
+  } else if (type === 'wrench') {
+    // little rising chime
+    playGentleTone(440.00, 0.3, now);         // A
+    playGentleTone(659.25, 0.35, now + 0.1);  // E
+  } else if (type === 'screwdriver') {
+    // gentle spinning trill
+    playGentleTone(523.25, 0.2, now);
+    playGentleTone(587.33, 0.2, now + 0.1);
+    playGentleTone(659.25, 0.3, now + 0.2);
+  } else if (type === 'saw') {
+    // playful back-and-forth
+    playGentleTone(349.23, 0.2, now);
+    playGentleTone(440.00, 0.2, now + 0.12);
+    playGentleTone(349.23, 0.25, now + 0.24);
+  } else if (type === 'paint') {
+    // soft gliding tone
+    playGentleTone(587.33, 0.5, now);
+  } else if (type === 'drill') {
+    // quick happy trill
+    playGentleTone(659.25, 0.15, now);
+    playGentleTone(783.99, 0.15, now + 0.08);
+    playGentleTone(880.00, 0.25, now + 0.16);
+  }
+}
+document.querySelectorAll('#toolsScreen .item-btn').forEach(btn => {
+  const play = () => {
+    playToolSound(btn.dataset.tool);
+    wiggle(btn);
+    burstAt(btn, '💥');
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- NOTES: do-re-mi-fa-sol-la scale ---------------- */
+const scale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00]; // C D E F G A
+function playNote(index) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = scale[index];
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.3, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now); osc.stop(now + 0.6);
+}
+document.querySelectorAll('#notesScreen .item-btn').forEach(btn => {
+  const play = () => {
+    playNote(parseInt(btn.dataset.note, 10));
+    wiggle(btn);
+    burstAt(btn, '🎶');
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- COLORS: gentle chime + spoken color name ---------------- */
+const colorEmojis = ['❤️','💙','💛','💚','💜','🩷'];
+const colorScale = [329.63, 392.00, 440.00, 523.25, 587.33, 659.25]; // E G A C D E
+const hebrewColors = ['אדום', 'כחול', 'צהוב', 'ירוק', 'סגול', 'ורוד'];
+function speakText(text) {
+  if (!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'he-IL';
+  utter.rate = 0.85;
+  utter.pitch = 1.2;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utter);
+}
+document.querySelectorAll('#colorsScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const idx = parseInt(btn.dataset.color, 10);
+    playGentleTone(colorScale[idx], 0.5, getAudioCtx().currentTime);
+    speakText(hebrewColors[idx]);
+    wiggle(btn);
+    burstAt(btn, colorEmojis[idx]);
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- NUMBERS: spoken Hebrew number + chime ---------------- */
+const hebrewNumbers = ['', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש'];
+document.querySelectorAll('#numbersScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const n = parseInt(btn.dataset.num, 10);
+    playGentleTone(scale[(n - 1) % scale.length], 0.35, getAudioCtx().currentTime);
+    speakText(hebrewNumbers[n]);
+    wiggle(btn);
+    burstAt(btn, '🔢');
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- FARTS: varied noise-based raspberry sounds ---------------- */
+function makeNoiseBuffer(ctx, duration) {
+  const bufferSize = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+/* ---------------- FARTS: pulsed noise bursts for a real "brrrt" texture ---------------- */
+function playSingleBurp(ctx, when, freq, dur, gainAmt) {
+  const noise = ctx.createBufferSource();
+  noise.buffer = makeNoiseBuffer(ctx, dur);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = freq;
+  filter.Q.value = 0.7;
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, when);
+  env.gain.exponentialRampToValueAtTime(gainAmt, when + dur * 0.15);
+  env.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+  noise.connect(filter);
+  filter.connect(env);
+  env.connect(ctx.destination);
+
+  noise.start(when);
+  noise.stop(when + dur);
+}
+
+function playFartSound(variant) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const now = ctx.currentTime;
+
+  const configs = [
+    { pulses: 8,  pulseDur: 0.055, freq: 250, gain: 0.8, jitter: 0.4 },  // classic brrrt
+    { pulses: 14, pulseDur: 0.06,  freq: 180, gain: 0.75, jitter: 0.3 }, // long rumbly one
+    { pulses: 3,  pulseDur: 0.05,  freq: 420, gain: 0.7, jitter: 0.2 },  // short squeaky toot
+    { pulses: 6,  pulseDur: 0.09,  freq: 120, gain: 0.85, jitter: 0.5 }, // deep bass one
+    { pulses: 2,  pulseDur: 0.04,  freq: 550, gain: 0.6, jitter: 0.15 }, // tiny high squeak
+    { pulses: 10, pulseDur: 0.05,  freq: 300, gain: 0.75, jitter: 0.6 }  // wet sputtery one
+  ];
+  const cfg = configs[variant % configs.length];
+
+  let t = now;
+  for (let i = 0; i < cfg.pulses; i++) {
+    const freqVariation = cfg.freq * (0.85 + Math.random() * 0.3);
+    const durVariation = cfg.pulseDur * (0.8 + Math.random() * 0.4);
+    const gainVariation = cfg.gain * (0.7 + Math.random() * 0.3);
+    playSingleBurp(ctx, t, freqVariation, durVariation, gainVariation);
+    t += durVariation * (1 - cfg.jitter * 0.3) + Math.random() * cfg.jitter * 0.01;
+  }
+}
+
+const fartExtras = ['😂','💨','🤭','😆','🫧','🎉'];
+document.querySelectorAll('#fartsScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const idx = parseInt(btn.dataset.fart, 10);
+    playFartSound(idx);
+    wiggle(btn);
+    burstAt(btn, fartExtras[idx]);
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- BUBBLES: satisfying "pop" sound ---------------- */
+function playPopSound(variant) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const pitch = 500 + variant * 90;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(pitch * 0.5, now);
+  osc.frequency.exponentialRampToValueAtTime(pitch * 1.8, now + 0.06);
+  osc.frequency.exponentialRampToValueAtTime(pitch * 0.9, now + 0.12);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.35, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now); osc.stop(now + 0.2);
+}
+const bubbleEmojis = ['🫧','💦','✨','🌊','💧','⭐'];
+document.querySelectorAll('#bubblesScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const idx = parseInt(btn.dataset.bubble, 10);
+    playPopSound(idx);
+    wiggle(btn);
+    burstAt(btn, bubbleEmojis[idx]);
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- SHAPES: spoken Hebrew shape name + chime ---------------- */
+const hebrewShapes = ['כוכב', 'עיגול', 'משולש', 'ריבוע', 'לב', 'מעוין'];
+const shapeScale = [349.23, 392.00, 440.00, 493.88, 523.25, 587.33]; // F G A B C D
+document.querySelectorAll('#shapesScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const idx = parseInt(btn.dataset.shape, 10);
+    playGentleTone(shapeScale[idx], 0.4, getAudioCtx().currentTime);
+    speakText(hebrewShapes[idx]);
+    wiggle(btn);
+    burstAt(btn, '✨');
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- BALLOONS: squeaky rubbing sound ---------------- */
+function playBalloonSound(variant) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const baseFreq = 300 + variant * 60;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+
+  osc.frequency.setValueAtTime(baseFreq, now);
+  osc.frequency.linearRampToValueAtTime(baseFreq * 1.4, now + 0.1);
+  osc.frequency.linearRampToValueAtTime(baseFreq * 0.9, now + 0.2);
+  osc.frequency.linearRampToValueAtTime(baseFreq * 1.2, now + 0.3);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.25, now + 0.03);
+  gain.gain.setValueAtTime(0.25, now + 0.28);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now); osc.stop(now + 0.35);
+}
+const balloonEmojis = ['🎉','✨','🎊','💫','🌟','🥳'];
+document.querySelectorAll('#balloonsScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const idx = parseInt(btn.dataset.balloon, 10);
+    playBalloonSound(idx);
+    wiggle(btn);
+    burstAt(btn, balloonEmojis[idx]);
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- BELLS: bright bell chime with harmonics ---------------- */
+function playBellSound(variant) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const bellScale = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00]; // C D E F G A
+  const freq = bellScale[variant % bellScale.length];
+
+  // Bell timbre: fundamental + a couple of slightly detuned overtones
+  [1, 2.01, 3.03].forEach((mult, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq * mult;
+    const peak = 0.3 / (i + 1);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.1 - i * 0.2);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 1.2);
+  });
+}
+document.querySelectorAll('#bellsScreen .item-btn').forEach(btn => {
+  const play = () => {
+    const idx = parseInt(btn.dataset.bell, 10);
+    playBellSound(idx);
+    wiggle(btn);
+    burstAt(btn, '🎶');
+  };
+  btn.addEventListener('click', play);
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+</script>
+</body>
+</html>
