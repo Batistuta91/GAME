@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>המשחק של התינוקת</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playpen+Sans+Hebrew:wght@400..700&display=swap" rel="stylesheet">
 <style>
   * {
     margin: 0;
@@ -26,6 +29,8 @@
     display: none;
     background-size: 400% 400%;
     animation: bgShift 14s ease infinite;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .screen.active { display: block; }
   @keyframes bgShift {
@@ -41,10 +46,10 @@
   #menuGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 1fr;
+    grid-auto-rows: minmax(110px, 1fr);
     gap: 14px;
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     padding: 16px;
   }
   .menu-btn {
@@ -58,6 +63,7 @@
     font-size: 60px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     transition: transform 0.08s ease;
+    min-height: 110px;
   }
   .menu-btn.wide { grid-column: span 2; }
   .menu-btn:active { transform: scale(0.94); }
@@ -76,10 +82,13 @@
   #menuShapes { background: #FFE29A; }
   #menuBalloons { background: #FFC2E2; }
   #menuBells { background: #FFD97D; }
+  #menuLetters { background: #B5EAD7; }
+  #menuLettersEn { background: #C8E7FF; }
+  #menuLettersAr { background: #FFE0B5; }
 
   /* ---------- STAGE BACK BUTTON ---------- */
   .back-btn {
-    position: absolute;
+    position: fixed;
     top: 14px;
     left: 14px;
     width: 50px;
@@ -95,10 +104,10 @@
   .item-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 1fr;
+    grid-auto-rows: minmax(110px, 1fr);
     gap: 10px;
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     padding: 10px;
   }
   .item-btn {
@@ -110,6 +119,7 @@
     justify-content: center;
     box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     transition: transform 0.08s ease;
+    min-height: 110px;
   }
   .item-btn:active { transform: scale(0.9); }
   .item-btn.playing { animation: wiggle 0.5s ease; }
@@ -139,7 +149,7 @@
   #screwdriver { background: #FCF6BD; }
   #saw { background: #E4C1F9; }
   #paintbrush { background: #B9FBC0; }
-  #drill { background: #F1C0E8; }
+  #scissors { background: #F1C0E8; }
 
   /* Notes screen colors */
   #notesScreen { background: linear-gradient(135deg, #FBC4AB, #F8AD9D, #FFD6A5); }
@@ -222,6 +232,55 @@
   #bell5 { background: #E9C46A; }
   #bell6 { background: #F0C987; }
 
+  /* Letters screen */
+  #lettersScreen { background: linear-gradient(135deg, #E8F9F0, #FFF6E5, #EAF4FF); overflow-y: auto; }
+  #lettersEnScreen { background: linear-gradient(135deg, #E5F3FF, #FFF9E5, #F0E5FF); overflow-y: auto; }
+  #lettersArScreen { background: linear-gradient(135deg, #FFF3E0, #E0FFF3, #F3E0FF); overflow-y: auto; }
+  .letters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    padding: 70px 8px 20px 8px;
+  }
+  .letter-card {
+    border: none;
+    border-radius: 20px;
+    background: #FFFFFF;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    transition: transform 0.08s ease;
+  }
+  .letter-card:active { transform: scale(0.92); }
+  .letter-card.playing { animation: wiggle 0.5s ease; }
+  .letter-print {
+    font-size: 34px;
+    font-weight: bold;
+    color: #333;
+  }
+  .letter-cursive {
+    font-family: 'Playpen Sans Hebrew', 'Noto Sans Hebrew', Arial, sans-serif;
+    font-style: italic;
+    font-size: 26px;
+    color: #6B4FA0;
+    margin-top: 2px;
+  }
+  .letter-sub {
+    font-size: 24px;
+    color: #6B4FA0;
+    margin-top: 2px;
+  }
+  .letter-card:nth-child(6n+1) { background: #FFE5E5; }
+  .letter-card:nth-child(6n+2) { background: #E5F3FF; }
+  .letter-card:nth-child(6n+3) { background: #FFF6D9; }
+  .letter-card:nth-child(6n+4) { background: #E6FFE9; }
+  .letter-card:nth-child(6n+5) { background: #F3E5FF; }
+  .letter-card:nth-child(6n+6) { background: #FFE9F3; }
+
   .burst {
     position: fixed;
     pointer-events: none;
@@ -250,6 +309,9 @@
     <button class="menu-btn" id="menuShapes">⭐<span class="label">צורות</span></button>
     <button class="menu-btn" id="menuBalloons">🎈<span class="label">בלונים</span></button>
     <button class="menu-btn" id="menuBells">🔔<span class="label">פעמונים</span></button>
+    <button class="menu-btn" id="menuLetters">🔤<span class="label">אותיות עברית</span></button>
+    <button class="menu-btn" id="menuLettersEn">🔡<span class="label">אותיות אנגלית</span></button>
+    <button class="menu-btn wide" id="menuLettersAr">🔠<span class="label">אותיות ערבית</span></button>
   </div>
 </div>
 
@@ -276,7 +338,7 @@
     <button class="item-btn" id="screwdriver" data-tool="screwdriver">🪛</button>
     <button class="item-btn" id="saw" data-tool="saw">🪚</button>
     <button class="item-btn" id="paintbrush" data-tool="paint">🖌️</button>
-    <button class="item-btn" id="drill" data-tool="drill">🔩</button>
+    <button class="item-btn" id="scissors" data-tool="scissors">✂️</button>
   </div>
 </div>
 
@@ -315,7 +377,11 @@
     <button class="item-btn number-btn" id="num3" data-num="3">3</button>
     <button class="item-btn number-btn" id="num4" data-num="4">4</button>
     <button class="item-btn number-btn" id="num5" data-num="5">5</button>
-    <button class="item-btn number-btn wide" id="num6" data-num="6">6</button>
+    <button class="item-btn number-btn" id="num6" data-num="6">6</button>
+    <button class="item-btn number-btn" id="num7" data-num="7">7</button>
+    <button class="item-btn number-btn" id="num8" data-num="8">8</button>
+    <button class="item-btn number-btn" id="num9" data-num="9">9</button>
+    <button class="item-btn number-btn" id="num10" data-num="10">10</button>
   </div>
 </div>
 
@@ -384,6 +450,24 @@
   </div>
 </div>
 
+<!-- LETTERS STAGE (Hebrew) -->
+<div class="screen" id="lettersScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div id="lettersGrid" class="letters-grid"></div>
+</div>
+
+<!-- LETTERS STAGE (English) -->
+<div class="screen" id="lettersEnScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div id="lettersGridEn" class="letters-grid"></div>
+</div>
+
+<!-- LETTERS STAGE (Arabic) -->
+<div class="screen" id="lettersArScreen">
+  <button class="back-btn" data-back>🏠</button>
+  <div id="lettersGridAr" class="letters-grid"></div>
+</div>
+
 <script>
 /* ---------------- Navigation ---------------- */
 function showScreen(id) {
@@ -400,6 +484,9 @@ document.getElementById('menuBubbles').addEventListener('click', () => showScree
 document.getElementById('menuShapes').addEventListener('click', () => showScreen('shapesScreen'));
 document.getElementById('menuBalloons').addEventListener('click', () => showScreen('balloonsScreen'));
 document.getElementById('menuBells').addEventListener('click', () => showScreen('bellsScreen'));
+document.getElementById('menuLetters').addEventListener('click', () => showScreen('lettersScreen'));
+document.getElementById('menuLettersEn').addEventListener('click', () => showScreen('lettersEnScreen'));
+document.getElementById('menuLettersAr').addEventListener('click', () => showScreen('lettersArScreen'));
 document.querySelectorAll('[data-back]').forEach(btn => {
   btn.addEventListener('click', () => showScreen('menu'));
 });
@@ -421,8 +508,17 @@ function wiggle(btn) {
   void btn.offsetWidth;
   btn.classList.add('playing');
 }
+function speakText(text, lang) {
+  if (!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang || 'he-IL';
+  utter.rate = 0.85;
+  utter.pitch = 1.2;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utter);
+}
 
-/* ---------------- ANIMALS: real recordings ---------------- */
+/* ---------------- ANIMALS: real recordings + spoken name & sound ---------------- */
 const animalSounds = {
   dog: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Barking_of_a_dog.ogg'),
   cat: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Meow.ogg'),
@@ -432,16 +528,25 @@ const animalSounds = {
   duck: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Mudchute_duck_2.ogg'),
   pig: new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Mudchute_pig_1.ogg')
 };
+const animalHebrew = {
+  dog: 'כלב',
+  cat: 'חתול',
+  sheep: 'כבשה',
+  rooster: 'תרנגול',
+  cow: 'פרה',
+  duck: 'ברווז',
+  pig: 'חזיר'
+};
 document.querySelectorAll('#animalsScreen .item-btn').forEach(btn => {
   const play = () => {
     const audio = animalSounds[btn.dataset.sound];
     audio.currentTime = 0;
     audio.play().catch(() => {});
+    speakText(animalHebrew[btn.dataset.sound]);
     wiggle(btn);
     burstAt(btn);
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- Web Audio setup (tools + notes) ---------------- */
@@ -492,21 +597,28 @@ function playToolSound(type) {
   } else if (type === 'paint') {
     // soft gliding tone
     playGentleTone(587.33, 0.5, now);
-  } else if (type === 'drill') {
-    // quick happy trill
-    playGentleTone(659.25, 0.15, now);
-    playGentleTone(783.99, 0.15, now + 0.08);
-    playGentleTone(880.00, 0.25, now + 0.16);
+  } else if (type === 'scissors') {
+    // two quick "snip" sounds
+    playGentleTone(880.00, 0.1, now);
+    playGentleTone(987.77, 0.12, now + 0.15);
   }
 }
+const hebrewTools = {
+  hammer: 'פטיש',
+  wrench: 'מפתח ברגים',
+  screwdriver: 'מברג',
+  saw: 'מסור',
+  paint: 'מברשת צבע',
+  scissors: 'מספריים'
+};
 document.querySelectorAll('#toolsScreen .item-btn').forEach(btn => {
   const play = () => {
     playToolSound(btn.dataset.tool);
+    speakText(hebrewTools[btn.dataset.tool]);
     wiggle(btn);
     burstAt(btn, '💥');
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- NOTES: do-re-mi-fa-sol-la scale ---------------- */
@@ -524,29 +636,22 @@ function playNote(index) {
   osc.connect(gain); gain.connect(ctx.destination);
   osc.start(now); osc.stop(now + 0.6);
 }
+const hebrewInstruments = ['פסנתר', 'גיטרה', 'תופים', 'חצוצרה', 'סקסופון', 'בנג\'ו'];
 document.querySelectorAll('#notesScreen .item-btn').forEach(btn => {
   const play = () => {
-    playNote(parseInt(btn.dataset.note, 10));
+    const idx = parseInt(btn.dataset.note, 10);
+    playNote(idx);
+    speakText(hebrewInstruments[idx]);
     wiggle(btn);
     burstAt(btn, '🎶');
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- COLORS: gentle chime + spoken color name ---------------- */
 const colorEmojis = ['❤️','💙','💛','💚','💜','🩷'];
 const colorScale = [329.63, 392.00, 440.00, 523.25, 587.33, 659.25]; // E G A C D E
 const hebrewColors = ['אדום', 'כחול', 'צהוב', 'ירוק', 'סגול', 'ורוד'];
-function speakText(text) {
-  if (!('speechSynthesis' in window)) return;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = 'he-IL';
-  utter.rate = 0.85;
-  utter.pitch = 1.2;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utter);
-}
 document.querySelectorAll('#colorsScreen .item-btn').forEach(btn => {
   const play = () => {
     const idx = parseInt(btn.dataset.color, 10);
@@ -556,78 +661,75 @@ document.querySelectorAll('#colorsScreen .item-btn').forEach(btn => {
     burstAt(btn, colorEmojis[idx]);
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- NUMBERS: spoken Hebrew number + chime ---------------- */
-const hebrewNumbers = ['', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש'];
+const hebrewNumbers = ['', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר'];
+const numberScale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25]; // C D E F G A B C D E
 document.querySelectorAll('#numbersScreen .item-btn').forEach(btn => {
   const play = () => {
     const n = parseInt(btn.dataset.num, 10);
-    playGentleTone(scale[(n - 1) % scale.length], 0.35, getAudioCtx().currentTime);
+    playGentleTone(numberScale[n - 1], 0.35, getAudioCtx().currentTime);
     speakText(hebrewNumbers[n]);
     wiggle(btn);
     burstAt(btn, '🔢');
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
-/* ---------------- FARTS: varied noise-based raspberry sounds ---------------- */
-function makeNoiseBuffer(ctx, duration) {
-  const bufferSize = Math.floor(ctx.sampleRate * duration);
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-  return buffer;
-}
-
-/* ---------------- FARTS: pulsed noise bursts for a real "brrrt" texture ---------------- */
-function playSingleBurp(ctx, when, freq, dur, gainAmt) {
-  const noise = ctx.createBufferSource();
-  noise.buffer = makeNoiseBuffer(ctx, dur);
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = freq;
-  filter.Q.value = 0.7;
-
-  const env = ctx.createGain();
-  env.gain.setValueAtTime(0.0001, when);
-  env.gain.exponentialRampToValueAtTime(gainAmt, when + dur * 0.15);
-  env.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-
-  noise.connect(filter);
-  filter.connect(env);
-  env.connect(ctx.destination);
-
-  noise.start(when);
-  noise.stop(when + dur);
-}
-
+/* ---------------- FARTS: simple, reliable sawtooth "brrrt" synth ---------------- */
 function playFartSound(variant) {
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
   const now = ctx.currentTime;
 
   const configs = [
-    { pulses: 8,  pulseDur: 0.055, freq: 250, gain: 0.8, jitter: 0.4 },  // classic brrrt
-    { pulses: 14, pulseDur: 0.06,  freq: 180, gain: 0.75, jitter: 0.3 }, // long rumbly one
-    { pulses: 3,  pulseDur: 0.05,  freq: 420, gain: 0.7, jitter: 0.2 },  // short squeaky toot
-    { pulses: 6,  pulseDur: 0.09,  freq: 120, gain: 0.85, jitter: 0.5 }, // deep bass one
-    { pulses: 2,  pulseDur: 0.04,  freq: 550, gain: 0.6, jitter: 0.15 }, // tiny high squeak
-    { pulses: 10, pulseDur: 0.05,  freq: 300, gain: 0.75, jitter: 0.6 }  // wet sputtery one
+    { baseFreq: 90,  duration: 0.5, wobbleRate: 28, wobbleDepth: 30 }, // classic
+    { baseFreq: 65,  duration: 0.8, wobbleRate: 18, wobbleDepth: 22 }, // long rumbly
+    { baseFreq: 140, duration: 0.3, wobbleRate: 40, wobbleDepth: 45 }, // short squeaky
+    { baseFreq: 50,  duration: 0.6, wobbleRate: 12, wobbleDepth: 15 }, // deep bass
+    { baseFreq: 200, duration: 0.25, wobbleRate: 50, wobbleDepth: 60 }, // tiny high squeak
+    { baseFreq: 100, duration: 0.7, wobbleRate: 22, wobbleDepth: 35 }  // wet wobbly
   ];
   const cfg = configs[variant % configs.length];
 
-  let t = now;
-  for (let i = 0; i < cfg.pulses; i++) {
-    const freqVariation = cfg.freq * (0.85 + Math.random() * 0.3);
-    const durVariation = cfg.pulseDur * (0.8 + Math.random() * 0.4);
-    const gainVariation = cfg.gain * (0.7 + Math.random() * 0.3);
-    playSingleBurp(ctx, t, freqVariation, durVariation, gainVariation);
-    t += durVariation * (1 - cfg.jitter * 0.3) + Math.random() * cfg.jitter * 0.01;
-  }
+  // Main tone: sawtooth gives it a buzzy edge
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(cfg.baseFreq, now);
+  // slight downward glide like a real fart tailing off
+  osc.frequency.exponentialRampToValueAtTime(cfg.baseFreq * 0.6, now + cfg.duration);
+
+  // Vibrato LFO modulates the pitch to create the "brrrt" buzzing texture
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = cfg.wobbleRate;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = cfg.wobbleDepth;
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc.frequency);
+
+  // Lowpass filter to soften the harsh sawtooth edge
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 900;
+  filter.Q.value = 1;
+
+  // Loud, clear envelope
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.9, now + 0.04);
+  gain.gain.setValueAtTime(0.9, now + cfg.duration * 0.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + cfg.duration);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(now);
+  lfo.start(now);
+  osc.stop(now + cfg.duration);
+  lfo.stop(now + cfg.duration);
 }
 
 const fartExtras = ['😂','💨','🤭','😆','🫧','🎉'];
@@ -639,7 +741,6 @@ document.querySelectorAll('#fartsScreen .item-btn').forEach(btn => {
     burstAt(btn, fartExtras[idx]);
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- BUBBLES: satisfying "pop" sound ---------------- */
@@ -671,7 +772,6 @@ document.querySelectorAll('#bubblesScreen .item-btn').forEach(btn => {
     burstAt(btn, bubbleEmojis[idx]);
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- SHAPES: spoken Hebrew shape name + chime ---------------- */
@@ -686,7 +786,6 @@ document.querySelectorAll('#shapesScreen .item-btn').forEach(btn => {
     burstAt(btn, '✨');
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- BALLOONS: squeaky rubbing sound ---------------- */
@@ -721,7 +820,6 @@ document.querySelectorAll('#balloonsScreen .item-btn').forEach(btn => {
     burstAt(btn, balloonEmojis[idx]);
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
 });
 
 /* ---------------- BELLS: bright bell chime with harmonics ---------------- */
@@ -753,7 +851,116 @@ document.querySelectorAll('#bellsScreen .item-btn').forEach(btn => {
     burstAt(btn, '🎶');
   };
   btn.addEventListener('click', play);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); }, { passive: false });
+});
+
+/* ---------------- LETTERS: 22 Hebrew letters, print + cursive, spoken name ---------------- */
+const hebrewLetters = [
+  { letter: 'א', name: 'אָלֶף' },
+  { letter: 'ב', name: 'בֵּית' },
+  { letter: 'ג', name: 'גִּימֶל' },
+  { letter: 'ד', name: 'דָּלֶת' },
+  { letter: 'ה', name: 'הֵא' },
+  { letter: 'ו', name: 'וָו' },
+  { letter: 'ז', name: 'זַיִן' },
+  { letter: 'ח', name: 'חֵית' },
+  { letter: 'ט', name: 'טֵית' },
+  { letter: 'י', name: 'יוֹד' },
+  { letter: 'כ', name: 'כַּף' },
+  { letter: 'ל', name: 'לָמֶד' },
+  { letter: 'מ', name: 'מֵם' },
+  { letter: 'נ', name: 'נוּן' },
+  { letter: 'ס', name: 'סָמֶךְ' },
+  { letter: 'ע', name: 'עַיִן' },
+  { letter: 'פ', name: 'פֵּה' },
+  { letter: 'צ', name: 'צָדִי' },
+  { letter: 'ק', name: 'קוֹף' },
+  { letter: 'ר', name: 'רֵישׁ' },
+  { letter: 'ש', name: 'שִׁין' },
+  { letter: 'ת', name: 'תָּו' }
+];
+
+const lettersGrid = document.getElementById('lettersGrid');
+const letterChimeScale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88];
+
+hebrewLetters.forEach((item, i) => {
+  const card = document.createElement('button');
+  card.className = 'letter-card';
+
+  const printSpan = document.createElement('div');
+  printSpan.className = 'letter-print';
+  printSpan.textContent = item.letter;
+
+  const cursiveSpan = document.createElement('div');
+  cursiveSpan.className = 'letter-cursive';
+  cursiveSpan.textContent = item.letter;
+
+  card.appendChild(printSpan);
+  card.appendChild(cursiveSpan);
+  lettersGrid.appendChild(card);
+
+  const play = () => {
+    playGentleTone(letterChimeScale[i % letterChimeScale.length], 0.3, getAudioCtx().currentTime);
+    speakText(item.name, 'he-IL');
+    wiggle(card);
+    burstAt(card, '🔤');
+  };
+  card.addEventListener('click', play);
+});
+
+/* ---------------- LETTERS: 26 English letters, upper + lower, spoken name ---------------- */
+const englishLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M',
+                         'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+
+const lettersGridEn = document.getElementById('lettersGridEn');
+englishLetters.forEach((letter, i) => {
+  const card = document.createElement('button');
+  card.className = 'letter-card';
+
+  const printSpan = document.createElement('div');
+  printSpan.className = 'letter-print';
+  printSpan.textContent = letter;
+
+  const subSpan = document.createElement('div');
+  subSpan.className = 'letter-sub';
+  subSpan.textContent = letter.toLowerCase();
+
+  card.appendChild(printSpan);
+  card.appendChild(subSpan);
+  lettersGridEn.appendChild(card);
+
+  const play = () => {
+    playGentleTone(letterChimeScale[i % letterChimeScale.length], 0.3, getAudioCtx().currentTime);
+    speakText(letter, 'en-US');
+    wiggle(card);
+    burstAt(card, '🔡');
+  };
+  card.addEventListener('click', play);
+});
+
+/* ---------------- LETTERS: 28 Arabic letters, spoken name ---------------- */
+const arabicLetters = ['ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش',
+                        'ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ي'];
+
+const lettersGridAr = document.getElementById('lettersGridAr');
+arabicLetters.forEach((letter, i) => {
+  const card = document.createElement('button');
+  card.className = 'letter-card';
+
+  const printSpan = document.createElement('div');
+  printSpan.className = 'letter-print';
+  printSpan.style.fontSize = '44px';
+  printSpan.textContent = letter;
+
+  card.appendChild(printSpan);
+  lettersGridAr.appendChild(card);
+
+  const play = () => {
+    playGentleTone(letterChimeScale[i % letterChimeScale.length], 0.3, getAudioCtx().currentTime);
+    speakText(letter, 'ar-SA');
+    wiggle(card);
+    burstAt(card, '🔠');
+  };
+  card.addEventListener('click', play);
 });
 </script>
 </body>
