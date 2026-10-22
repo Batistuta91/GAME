@@ -621,27 +621,174 @@ document.querySelectorAll('#toolsScreen .item-btn').forEach(btn => {
   btn.addEventListener('click', play);
 });
 
-/* ---------------- NOTES: do-re-mi-fa-sol-la scale ---------------- */
-const scale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00]; // C D E F G A
-function playNote(index) {
-  const ctx = getAudioCtx();
-  const now = ctx.currentTime;
+/* ---------------- NOTES: each instrument plays a short phrase in its own voice ---------------- */
+// Piano: a few sine/triangle harmonics with a hammer-like attack and long decay
+function pianoNote(ctx, freq, t) {
+  [[1, 0.3, 'triangle'], [2, 0.12, 'sine'], [3, 0.05, 'sine']].forEach(([mult, peak, type]) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq * mult;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(peak * 0.3, t + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 1.5);
+  });
+}
+
+// Plucked string (Karplus-Strong): a burst of noise through a decaying delay loop
+function pluckNote(ctx, freq, t, opts) {
+  const sr = ctx.sampleRate;
+  const duration = opts.duration;
+  const buffer = ctx.createBuffer(1, Math.floor(sr * duration), sr);
+  const data = buffer.getChannelData(0);
+  const period = Math.round(sr / freq);
+  for (let i = 0; i < period; i++) data[i] = Math.random() * 2 - 1;
+  for (let i = period; i < data.length; i++) {
+    data[i] = opts.damping * 0.5 * (data[i - period] + data[i - period + 1]);
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = opts.brightness;
+  const gain = ctx.createGain();
+  gain.gain.value = opts.volume;
+  src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  src.start(t);
+}
+
+function noiseSource(ctx, duration) {
+  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  return src;
+}
+
+function kickDrum(ctx, t) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.value = scale[index];
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.3, now + 0.03);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+  osc.frequency.setValueAtTime(150, t);
+  osc.frequency.exponentialRampToValueAtTime(45, t + 0.15);
+  gain.gain.setValueAtTime(0.9, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
   osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(now); osc.stop(now + 0.6);
+  osc.start(t); osc.stop(t + 0.4);
 }
+
+function snareDrum(ctx, t) {
+  const noise = noiseSource(ctx, 0.25);
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 1200;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.5, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  noise.start(t);
+  // body tone of the drum skin
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = 190;
+  oscGain.gain.setValueAtTime(0.35, t);
+  oscGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  osc.connect(oscGain); oscGain.connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.15);
+}
+
+function hiHat(ctx, t) {
+  const noise = noiseSource(ctx, 0.08);
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 7000;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.25, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  noise.start(t);
+}
+
+// Wind instruments: buzzy oscillator through a filter that opens on attack, plus vibrato
+function windNote(ctx, freq, t, duration, opts) {
+  const osc = ctx.createOscillator();
+  osc.type = opts.wave;
+  osc.frequency.setValueAtTime(freq * opts.scoop, t);
+  osc.frequency.exponentialRampToValueAtTime(freq, t + 0.06);
+
+  const lfo = ctx.createOscillator();
+  const lfoGain = ctx.createGain();
+  lfo.frequency.value = opts.vibratoRate;
+  lfoGain.gain.value = freq * opts.vibratoDepth;
+  lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.Q.value = opts.q;
+  filter.frequency.setValueAtTime(opts.filterStart, t);
+  filter.frequency.exponentialRampToValueAtTime(opts.filterPeak, t + 0.08);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(opts.volume, t + 0.04);
+  gain.gain.setValueAtTime(opts.volume, t + duration - 0.06);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+  osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  osc.start(t); lfo.start(t);
+  osc.stop(t + duration); lfo.stop(t + duration);
+}
+
+const trumpetOpts = { wave: 'sawtooth', scoop: 0.97, vibratoRate: 5.5, vibratoDepth: 0.006, q: 2, filterStart: 600, filterPeak: 3200, volume: 0.22 };
+const saxOpts = { wave: 'square', scoop: 0.92, vibratoRate: 5, vibratoDepth: 0.012, q: 4, filterStart: 400, filterPeak: 1500, volume: 0.2 };
+const guitarOpts = { duration: 2, damping: 0.996, brightness: 3500, volume: 0.5 };
+const banjoOpts = { duration: 1, damping: 0.985, brightness: 7000, volume: 0.45 };
+
+function playInstrument(index) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  if (index === 0) {
+    // piano: C-E-G arpeggio up to high C
+    [261.63, 329.63, 392.00, 523.25].forEach((f, i) => pianoNote(ctx, f, now + i * 0.18));
+  } else if (index === 1) {
+    // guitar: strummed G major chord
+    [98.00, 123.47, 146.83, 196.00, 246.94, 392.00].forEach((f, i) => pluckNote(ctx, f, now + i * 0.03, guitarOpts));
+  } else if (index === 2) {
+    // drums: boom-tss-tak-tss-boom-boom-tak
+    kickDrum(ctx, now);
+    hiHat(ctx, now + 0.15);
+    snareDrum(ctx, now + 0.3);
+    hiHat(ctx, now + 0.45);
+    kickDrum(ctx, now + 0.6);
+    kickDrum(ctx, now + 0.75);
+    snareDrum(ctx, now + 0.9);
+  } else if (index === 3) {
+    // trumpet: ta-ta-ta-taaa fanfare
+    windNote(ctx, 392.00, now, 0.14, trumpetOpts);
+    windNote(ctx, 392.00, now + 0.16, 0.14, trumpetOpts);
+    windNote(ctx, 523.25, now + 0.32, 0.14, trumpetOpts);
+    windNote(ctx, 659.25, now + 0.48, 0.6, trumpetOpts);
+  } else if (index === 4) {
+    // saxophone: smooth jazzy phrase
+    windNote(ctx, 233.08, now, 0.3, saxOpts);
+    windNote(ctx, 277.18, now + 0.3, 0.3, saxOpts);
+    windNote(ctx, 311.13, now + 0.6, 0.7, saxOpts);
+  } else if (index === 5) {
+    // banjo: quick bright picking roll
+    [392.00, 293.66, 493.88, 587.33, 392.00, 783.99].forEach((f, i) => pluckNote(ctx, f, now + i * 0.1, banjoOpts));
+  }
+}
+const instrumentSpeakDelay = [800, 900, 1100, 1000, 1200, 800]; // ms - let the instrument be heard before its name
 const hebrewInstruments = ['פסנתר', 'גיטרה', 'תופים', 'חצוצרה', 'סקסופון', 'בנג\'ו'];
 document.querySelectorAll('#notesScreen .item-btn').forEach(btn => {
   const play = () => {
     const idx = parseInt(btn.dataset.note, 10);
-    playNote(idx);
-    speakText(hebrewInstruments[idx]);
+    playInstrument(idx);
+    setTimeout(() => speakText(hebrewInstruments[idx]), instrumentSpeakDelay[idx]);
     wiggle(btn);
     burstAt(btn, '🎶');
   };
